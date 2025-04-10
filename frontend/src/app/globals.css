@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -139,4 +140,16 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+/* Fix for select dropdown on mobile */
+[data-radix-popper-content-wrapper] {
+  position: fixed !important;
+  width: var(--radix-popper-anchor-width) !important;
+  max-width: calc(100vw - 24px) !important;
+  z-index: 50 !important;
+}
+
+.SelectContent {
+  width: var(--radix-select-trigger-width);
+  max-height: var(--radix-select-content-available-height);
 }
