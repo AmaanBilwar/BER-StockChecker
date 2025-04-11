@@ -212,8 +212,8 @@ export default function AddItemForm() {
                             </div>
                           )}
                         </div>
-                        <div className="flex gap-2 w-full">
-                          <Button type="button" variant="outline" className="w-full text-xs sm:text-sm" asChild>
+                        <div className="flex gap-2">
+                          <Button type="button" variant="outline" className="flex-1 text-xs sm:text-sm max-w-[120px]" asChild>
                             <label htmlFor="image-upload" className="cursor-pointer">
                               <Upload className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                               Upload
@@ -229,7 +229,7 @@ export default function AddItemForm() {
                           <Button
                             type="button"
                             variant="outline"
-                            className="w-full text-xs sm:text-sm"
+                            className="flex-1 text-xs sm:text-sm max-w-[120px]"
                             onClick={() => setPreviewImage(null)}
                           >
                             Clear
