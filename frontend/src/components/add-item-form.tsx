@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Camera, Upload, Scan, Check } from "lucide-react"
+import { Camera, Upload, Scan, Check, X } from "lucide-react"
 
 const formSchema = z.object({
   name: z.string().min(2, {
@@ -33,6 +33,9 @@ export default function AddItemForm() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isCameraActive, setIsCameraActive] = useState(false)
+  const [stream, setStream] = useState<MediaStream | null>(null)
+  const videoRef = useRef<HTMLVideoElement>(null)
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -42,6 +45,15 @@ export default function AddItemForm() {
       quantity: 1,
     },
   })
+
+  // Cleanup function for camera stream
+  useEffect(() => {
+    return () => {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop())
+      }
+    }
+  }, [stream])
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true)
@@ -57,7 +69,7 @@ export default function AddItemForm() {
       }
 
       // Make API call to create item
-      const response = await fetch('https://ber-stockchecker.onrender.com/api/items', {
+      const response = await fetch('http://localhost:5000/api/items', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -98,21 +110,136 @@ export default function AddItemForm() {
     }
   }
 
+  const startCamera = async () => {
+    try {
+      console.log('Starting camera...')
+      
+      // First set camera as active so video element renders
+      setIsCameraActive(true)
+      
+      // Wait a bit for the video element to be created
+      await new Promise(resolve => setTimeout(resolve, 100))
+      
+      if (!videoRef.current) {
+        throw new Error('Video element not found. Please try again.')
+      }
+
+      console.log('Video element found:', videoRef.current)
+
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('Your browser does not support camera access')
+      }
+
+      const mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: true
+      })
+      
+      console.log('Got media stream:', mediaStream)
+      setStream(mediaStream)
+      
+      videoRef.current.srcObject = mediaStream
+      
+      // Add event listeners for video element
+      videoRef.current.onloadedmetadata = () => {
+        console.log('Video metadata loaded')
+        videoRef.current?.play().catch(e => {
+          console.error('Error playing video:', e)
+          setError('Failed to play video stream')
+        })
+      }
+      
+      videoRef.current.onplay = () => {
+        console.log('Video started playing')
+      }
+      
+      videoRef.current.onerror = (e) => {
+        console.error('Video element error:', e)
+        setError('Error displaying video stream')
+      }
+    } catch (err) {
+      console.error('Error accessing camera:', err)
+      setError(err instanceof Error ? err.message : 'An unknown error occurred')
+      setIsCameraActive(false)
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop())
+        setStream(null)
+      }
+    }
+  }
+
+  const stopCamera = () => {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop())
+      setStream(null)
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null
+    }
+    setIsCameraActive(false)
+  }
+
+  const captureImage = () => {
+    if (!videoRef.current) return
+
+    const canvas = document.createElement('canvas')
+    canvas.width = videoRef.current.videoWidth
+    canvas.height = videoRef.current.videoHeight
+    const ctx = canvas.getContext('2d')
+    if (ctx) {
+      ctx.drawImage(videoRef.current, 0, 0)
+      const imageData = canvas.toDataURL('image/jpeg')
+      setPreviewImage(imageData)
+      stopCamera()
+    }
+  }
+
   const handleScan = async () => {
-    // In a real app, this would activate the camera and process the scan
-    // For now, we'll just simulate a successful scan with a timeout
+    if (!previewImage) {
+      setError('Please capture an image first')
+      return
+    }
+
     setIsSubmitting(true)
     setError(null)
     
     try {
-      // Simulate scanning delay
-      await new Promise(resolve => setTimeout(resolve, 1500))
+      // Send image to backend for OCR processing
+      const response = await fetch('http://localhost:5000/api/scan', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ image: previewImage }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to process image')
+      }
+
+      const data = await response.json()
       
-      // Set form values with scanned data
-      form.setValue("name", "Scanned Motor Controller")
-      form.setValue("category", "electronics")
-      form.setValue("quantity", 1)
-      setPreviewImage("/placeholder.svg?height=200&width=200")
+      // Update form with scanned data
+      form.setValue("name", data.name)
+      form.setValue("quantity", data.quantity)
+      
+      // Try to determine category based on the raw text
+      const rawText = data.raw_text.toLowerCase()
+      let category = "other"
+      
+      if (rawText.includes("motor") || rawText.includes("controller") || rawText.includes("circuit")) {
+        category = "electronics"
+      } else if (rawText.includes("bolt") || rawText.includes("nut") || rawText.includes("screw")) {
+        category = "mechanical"
+      } else if (rawText.includes("battery") || rawText.includes("power")) {
+        category = "power"
+      } else if (rawText.includes("material") || rawText.includes("sheet")) {
+        category = "materials"
+      } else if (rawText.includes("tool") || rawText.includes("wrench")) {
+        category = "tools"
+      }
+      
+      form.setValue("category", category)
     } catch (err) {
       console.error('Error during scan:', err)
       setError(err instanceof Error ? err.message : 'An unknown error occurred')
@@ -263,26 +390,78 @@ export default function AddItemForm() {
               <div className="space-y-3 sm:space-y-4">
                 <div>
                   <Label>Scan Item</Label>
-                  <div className="mt-2 border rounded-lg overflow-hidden w-full aspect-square sm:aspect-video flex items-center justify-center bg-muted/30">
-                    {previewImage ? (
+                  <div className="mt-2 border rounded-lg overflow-hidden w-full aspect-square sm:aspect-video relative bg-black">
+                    <video
+                      ref={videoRef}
+                      autoPlay
+                      playsInline
+                      muted
+                      className={`absolute inset-0 w-full h-full object-cover ${isCameraActive ? 'block' : 'hidden'}`}
+                      onLoadedMetadata={() => console.log('Video element metadata loaded')}
+                      onPlay={() => console.log('Video element started playing')}
+                      onError={(e) => {
+                        console.error('Video element error:', e)
+                        setError('Error displaying video stream')
+                      }}
+                    />
+                    {!isCameraActive && previewImage && (
                       <img
                         src={previewImage}
-                        alt="Scanned item"
-                        className="max-h-full object-contain"
+                        alt="Captured item"
+                        className="absolute inset-0 w-full h-full object-contain"
                       />
-                    ) : (
-                      <div className="text-center p-4">
-                        <Camera className="h-8 w-8 sm:h-10 sm:w-10 mx-auto text-muted-foreground" />
-                        <p className="text-sm text-muted-foreground mt-2">Camera preview will appear here</p>
+                    )}
+                    {!isCameraActive && !previewImage && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-muted/30">
+                        <div className="text-center p-4">
+                          <Camera className="h-8 w-8 sm:h-10 sm:w-10 mx-auto text-muted-foreground" />
+                          <p className="text-sm text-muted-foreground mt-2">Click "Start Camera" to begin scanning</p>
+                        </div>
                       </div>
                     )}
                   </div>
                   <div className="mt-3 sm:mt-4 flex gap-2">
-                    <Button type="button" className="w-full" onClick={handleScan} disabled={isSubmitting}>
-                      <Scan className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                      {isSubmitting ? "Scanning..." : "Scan Item"}
-                    </Button>
+                    {!isCameraActive && !previewImage && (
+                      <Button 
+                        type="button" 
+                        className="w-full" 
+                        onClick={() => {
+                          console.log('Start camera button clicked')
+                          startCamera()
+                        }}
+                      >
+                        <Camera className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                        Start Camera
+                      </Button>
+                    )}
+                    {isCameraActive && (
+                      <>
+                        <Button type="button" className="w-full" onClick={captureImage}>
+                          <Camera className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                          Capture
+                        </Button>
+                        <Button type="button" variant="outline" className="w-full" onClick={stopCamera}>
+                          <X className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                          Cancel
+                        </Button>
+                      </>
+                    )}
+                    {previewImage && (
+                      <>
+                        <Button type="button" className="w-full" onClick={handleScan} disabled={isSubmitting}>
+                          <Scan className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                          {isSubmitting ? "Scanning..." : "Scan Item"}
+                        </Button>
+                        <Button type="button" variant="outline" className="w-full" onClick={() => setPreviewImage(null)}>
+                          <X className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                          Clear
+                        </Button>
+                      </>
+                    )}
                   </div>
+                  {error && (
+                    <p className="text-sm text-red-500 mt-2">{error}</p>
+                  )}
                 </div>
               </div>
 
