@@ -1,7 +1,7 @@
 
 # BER Stock Checker
 
-you can test the app (here)[https://ber-stock-checker.vercel.app/]
+you can test the app [here](https://ber-stock-checker.vercel.app/)
 
 A web application for managing inventory items with a React frontend and Flask/MongoDB backend.
 
