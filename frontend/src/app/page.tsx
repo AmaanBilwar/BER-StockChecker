@@ -5,7 +5,7 @@ import AddItemForm from "@/components/add-item-form"
 import { useAuth, SignInButton } from "@clerk/nextjs"
 
 export default function Home() {
-  const { isLoaded, isSignedIn, userId, sessionId, getToken } = useAuth()
+  const { isLoaded, isSignedIn } = useAuth()
 
   if (!isLoaded) {
     return <div>Loading...</div>
