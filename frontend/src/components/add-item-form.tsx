@@ -32,6 +32,7 @@ export default function AddItemForm() {
   const [previewImage, setPreviewImage] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -42,22 +43,48 @@ export default function AddItemForm() {
     },
   })
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true)
+    setError(null)
 
-    // Simulate API call
-    setTimeout(() => {
-      console.log(values)
-      setIsSubmitting(false)
+    try {
+      // Prepare the data to send to the API
+      const itemData = {
+        name: values.name,
+        category: values.category,
+        quantity: values.quantity,
+        image_url: previewImage || null
+      }
+
+      // Make API call to create item
+      const response = await fetch('http://localhost:5000/api/items', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(itemData),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to save item')
+      }
+
+      // Success
       setIsSuccess(true)
-
+      
       // Reset form after success
       setTimeout(() => {
         form.reset()
         setPreviewImage(null)
         setIsSuccess(false)
       }, 2000)
-    }, 1000)
+    } catch (err) {
+      console.error('Error saving item:', err)
+      setError(err instanceof Error ? err.message : 'An unknown error occurred')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -71,17 +98,27 @@ export default function AddItemForm() {
     }
   }
 
-  const handleScan = () => {
+  const handleScan = async () => {
     // In a real app, this would activate the camera and process the scan
     // For now, we'll just simulate a successful scan with a timeout
     setIsSubmitting(true)
-    setTimeout(() => {
-      setIsSubmitting(false)
+    setError(null)
+    
+    try {
+      // Simulate scanning delay
+      await new Promise(resolve => setTimeout(resolve, 1500))
+      
+      // Set form values with scanned data
       form.setValue("name", "Scanned Motor Controller")
       form.setValue("category", "electronics")
       form.setValue("quantity", 1)
       setPreviewImage("/placeholder.svg?height=200&width=200")
-    }, 1500)
+    } catch (err) {
+      console.error('Error during scan:', err)
+      setError(err instanceof Error ? err.message : 'An unknown error occurred')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -214,6 +251,9 @@ export default function AddItemForm() {
                     "Save Item"
                   )}
                 </Button>
+                {error && (
+                  <p className="text-red-500 text-sm mt-2">{error}</p>
+                )}
               </form>
             </Form>
           </TabsContent>
@@ -319,6 +359,9 @@ export default function AddItemForm() {
                         "Save Item"
                       )}
                     </Button>
+                    {error && (
+                      <p className="text-red-500 text-sm mt-2">{error}</p>
+                    )}
                   </form>
                 </Form>
               </div>
