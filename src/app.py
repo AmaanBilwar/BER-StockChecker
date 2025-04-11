@@ -6,6 +6,9 @@ import json
 from datetime import datetime
 from pymongo import MongoClient
 from bson import ObjectId
+import certifi
+
+ca = certifi.where()
 
 # Load environment variables
 load_dotenv()
@@ -16,7 +19,7 @@ CORS(app)  # Enable CORS for all routes
 
 # MongoDB connection
 MONGO_URI = os.getenv('MONGO_URI')
-client = MongoClient(MONGO_URI, tlsAllowInvalidCertificates=True)
+client = MongoClient(MONGO_URI, tlsAllowInvalidCertificates=True, tlsCAFile=ca)
 db = client['ber_stock_checker']
 items_collection = db['items']
 
