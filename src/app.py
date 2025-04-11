@@ -16,7 +16,7 @@ CORS(app)  # Enable CORS for all routes
 
 # MongoDB connection
 MONGO_URI = os.getenv('MONGO_URI')
-client = MongoClient(MONGO_URI)
+client = MongoClient(MONGO_URI, tlsAllowInvalidCertificates=True)
 db = client['ber_stock_checker']
 items_collection = db['items']
 
