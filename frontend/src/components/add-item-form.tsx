@@ -266,7 +266,7 @@ export default function AddItemForm() {
                   <div className="mt-2 border rounded-lg overflow-hidden w-full aspect-square sm:aspect-video flex items-center justify-center bg-muted/30">
                     {previewImage ? (
                       <img
-                        src={previewImage || "/placeholder.svg"}
+                        src={previewImage}
                         alt="Scanned item"
                         className="max-h-full object-contain"
                       />
