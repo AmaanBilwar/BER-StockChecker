@@ -1,4 +1,5 @@
  - [ ] add the ocr to only capture main title not all text 
  - [ ] mini map of the shop (where the stuff is located)
-
+ - [ ] notification system
+ - [ ] 
  
