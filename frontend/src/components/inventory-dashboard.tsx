@@ -32,7 +32,7 @@ export default function InventoryDashboard() {
     setError(null)
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL_HOSTED}/api/items`)
+      const response = await fetch(`https://ber-stockchecker.onrender.com/api/items`)
 
       if (!response.ok) {
         throw new Error("Failed to fetch inventory data")
@@ -55,7 +55,7 @@ export default function InventoryDashboard() {
     setUpdatingItems((prev) => ({ ...prev, [itemId]: true }))
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL_HOSTED}/api/items/${itemId}`, {
+      const response = await fetch(`https://ber-stockchecker.onrender.com/api/items/${itemId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

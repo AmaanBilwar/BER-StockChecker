@@ -78,7 +78,7 @@ export default function AddItemForm() {
       console.log("Submitting item data:", itemData);
 
       // Make API call to create item
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL_HOSTED}/api/items`, {
+      const response = await fetch(`https://ber-stockchecker.onrender.com/api/items`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -231,7 +231,7 @@ export default function AddItemForm() {
 
     try {
       // Send image to backend for OCR processing
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL_HOSTED}/api/scan`, {
+      const response = await fetch(`https://ber-stockchecker.onrender.com/api/scan`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
