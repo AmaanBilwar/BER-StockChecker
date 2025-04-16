@@ -32,6 +32,11 @@ genai_client = genai.Client(api_key=os.getenv('GEMINI_API_KEY'))
 # Valid location values
 VALID_LOCATIONS = ['ice_electronics', 'electronics_drawer', 'powertrain_drawer', 'ev_shelf']
 
+def format_location(location):
+    if not location:
+        return ''
+    return ' '.join(word.capitalize() for word in location.split('_'))
+
 def extract_text_from_image(image):
     try:
         # Create the prompt for Gemini
@@ -72,7 +77,7 @@ def get_items():
                 'name': item['name'],
                 'category': item['category'],
                 'quantity': item['quantity'],
-                'location': item.get('location', ''),  # Ensure location is included
+                'location': format_location(item.get('location', '')),
                 'image_url': item.get('image_url'),
                 'created_at': item['created_at'].isoformat() if item.get('created_at') else None
             }
@@ -122,7 +127,7 @@ def create_item():
                 'name': created_item['name'],
                 'category': created_item['category'],
                 'quantity': created_item['quantity'],
-                'location': created_item.get('location'),
+                'location': format_location(created_item.get('location', '')),
                 'image_url': created_item.get('image_url'),
                 'created_at': created_item['created_at'].isoformat()
             }
@@ -181,7 +186,7 @@ def update_item(item_id):
             'name': updated_item['name'],
             'category': updated_item['category'],
             'quantity': updated_item['quantity'],
-            'location': updated_item.get('location', ''),  # Include location field with default empty string
+            'location': format_location(updated_item.get('location', '')),
             'image_url': updated_item.get('image_url'),
             'created_at': updated_item['created_at'].isoformat()
         }

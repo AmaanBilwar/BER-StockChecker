@@ -30,6 +30,14 @@ const formSchema = z.object({
   })
 })
 
+// Add this function before the AddItemForm component
+const formatLocation = (location: string) => {
+  return location
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
+
 export default function AddItemForm() {
   const [activeTab, setActiveTab] = useState("manual")
   const [previewImage, setPreviewImage] = useState<string | null>(null)
@@ -336,10 +344,10 @@ export default function AddItemForm() {
                               className="w-full min-w-[8rem] max-w-[--radix-select-trigger-width]"
                               sideOffset={4}
                             >
-                              <SelectItem value="ice_electronics">ICE Electronics</SelectItem>
-                              <SelectItem value="electronics_drawer">Electronics Drawer</SelectItem>
-                              <SelectItem value="powertrain_drawer">Powertrain Drawer</SelectItem>
-                              <SelectItem value="ev_shelf">EV Shelf</SelectItem>
+                              <SelectItem value="ice_electronics">{formatLocation("ice_electronics")}</SelectItem>
+                              <SelectItem value="electronics_drawer">{formatLocation("electronics_drawer")}</SelectItem>
+                              <SelectItem value="powertrain_drawer">{formatLocation("powertrain_drawer")}</SelectItem>
+                              <SelectItem value="ev_shelf">{formatLocation("ev_shelf")}</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -588,10 +596,10 @@ export default function AddItemForm() {
                               className="w-full min-w-[8rem] max-w-[--radix-select-trigger-width]"
                               sideOffset={4}
                             >
-                              <SelectItem value="ice_electronics">ICE Electronics</SelectItem>
-                              <SelectItem value="electronics_drawer">Electronics Drawer</SelectItem>
-                              <SelectItem value="powertrain_drawer">Powertrain Drawer</SelectItem>
-                              <SelectItem value="ev_shelf">EV Shelf</SelectItem>
+                              <SelectItem value="ice_electronics">{formatLocation("ice_electronics")}</SelectItem>
+                              <SelectItem value="electronics_drawer">{formatLocation("electronics_drawer")}</SelectItem>
+                              <SelectItem value="powertrain_drawer">{formatLocation("powertrain_drawer")}</SelectItem>
+                              <SelectItem value="ev_shelf">{formatLocation("ev_shelf")}</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />

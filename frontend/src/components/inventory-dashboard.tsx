@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Search, Filter, AlertTriangle, RefreshCw, Plus, Minus } from "lucide-react"
+import { Search, Filter, AlertTriangle, RefreshCw, Plus, Minus, MapPin } from "lucide-react"
 import Image from "next/image"
 import { toast } from "sonner"
 
@@ -15,9 +15,19 @@ interface Item {
   name: string
   category: string
   quantity: number
+  location: string
   image_url?: string
   created_at: string
 }
+
+// Add this function before the InventoryDashboard component
+const formatLocation = (location: string) => {
+  if (!location) return 'No location set';
+  return location
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
 
 export default function InventoryDashboard() {
   const [inventory, setInventory] = useState<Item[]>([])
@@ -163,6 +173,10 @@ export default function InventoryDashboard() {
                   <div>
                     <CardTitle className="text-lg sm:text-xl line-clamp-1">{item.name}</CardTitle>
                     <CardDescription>{item.category}</CardDescription>
+                    <div className="flex items-center gap-1 text-xs text-gray-500 mt-1">
+                      <MapPin className="h-3 w-3" />
+                      <span>{formatLocation(item.location)}</span>
+                    </div>
                   </div>
                   <div className="flex flex-col items-end">
                     <Badge variant={item.quantity <= 5 ? "destructive" : "secondary"} className="shrink-0 mb-2">
