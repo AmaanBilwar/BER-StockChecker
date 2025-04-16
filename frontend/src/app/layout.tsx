@@ -39,22 +39,40 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider>
-    <html lang="en">
-      <body
-        className={`${roboto.variable} ${roboto.variable} antialiased`}
+      <html 
+        lang="en" 
+        className={`${roboto.variable} ${geistSans.variable} ${geistMono.variable}`}
+        suppressHydrationWarning
       >
-        <div className="fixed top-4 right-4 z-50">
-          <SignedOut>
-            <SignInButton />
-            <SignUpButton />
-          </SignedOut>
-          <SignedIn>
-            <UserButton />
-          </SignedIn>
-        </div>
-        {children}
-      </body>
-    </html>
+        <head>
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `
+                if (typeof window !== 'undefined') {
+                  const htmlElement = document.documentElement;
+                  ['data-__embeded-gyazo-content-j-s', 'data-__gyazo-expander-enabled'].forEach(attr => {
+                    if (htmlElement.hasAttribute(attr)) {
+                      htmlElement.removeAttribute(attr);
+                    }
+                  });
+                }
+              `,
+            }}
+          />
+        </head>
+        <body className="antialiased">
+          <div className="fixed top-4 right-4 z-50">
+            <SignedOut>
+              <SignInButton />
+              <SignUpButton />
+            </SignedOut>
+            <SignedIn>
+              <UserButton />
+            </SignedIn>
+          </div>
+          {children}
+        </body>
+      </html>
     </ClerkProvider>
   );
 }

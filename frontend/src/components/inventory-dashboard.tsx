@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Search, Filter, AlertTriangle, RefreshCw, Plus, Minus } from "lucide-react"
+import { Search, Filter, AlertTriangle, RefreshCw, Plus, Minus, MapPin } from "lucide-react"
 import Image from "next/image"
 import { toast } from "sonner"
 
@@ -15,6 +15,7 @@ interface Item {
   name: string
   category: string
   quantity: number
+  location: string
   image_url?: string
   created_at: string
 }
@@ -32,14 +33,29 @@ export default function InventoryDashboard() {
     setError(null)
 
     try {
-      const response = await fetch("https://ber-stockchecker.onrender.com/api/items")
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/items`)
 
       if (!response.ok) {
-        throw new Error("Failed to fetch inventory data")
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Failed to fetch inventory data")
       }
 
       const data = await response.json()
-      setInventory(data)
+      console.log("Received raw inventory data:", data)
+      
+      // Map the data to ensure all required fields are present
+      const processedData = data.map((item: Item) => ({
+        _id: item._id,
+        name: item.name,
+        category: item.category,
+        quantity: item.quantity,
+        location: item.location,
+        image_url: item.image_url,
+        created_at: item.created_at
+      }))
+      console.log("Processed inventory data:", processedData)
+      
+      setInventory(processedData)
     } catch (err) {
       console.error("Error fetching inventory:", err)
       setError(err instanceof Error ? err.message : "An unknown error occurred")
@@ -55,27 +71,41 @@ export default function InventoryDashboard() {
     setUpdatingItems((prev) => ({ ...prev, [itemId]: true }))
 
     try {
-      const response = await fetch(`https://ber-stockchecker.onrender.com/api/items/${itemId}`, {
+      const currentItem = inventory.find(item => item._id === itemId)
+      console.log("Current item before update:", currentItem)
+
+      const updateData = {
+        quantity: newQuantity,
+        location: currentItem?.location
+      }
+      console.log("Sending update data:", updateData)
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/items)`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ quantity: newQuantity }),
+        body: JSON.stringify(updateData)
       })
 
       if (!response.ok) {
-        throw new Error("Failed to update item quantity")
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Failed to update item")
       }
 
       const updatedItem = await response.json()
+      console.log("Updated item response:", updatedItem)
 
       // Update the item in the local state
-      setInventory((prev) => prev.map((item) => (item._id === itemId ? updatedItem : item)))
+      setInventory((prev) => prev.map((item) => (item._id === itemId ? {
+        ...updatedItem,
+        location: updatedItem.location || '' // Ensure location is never undefined
+      } : item)))
 
-      toast.success(`Quantity updated to ${newQuantity}`)
+      toast.success(`Item updated successfully`)
     } catch (err) {
-      console.error("Error updating item quantity:", err)
-      toast.error(err instanceof Error ? err.message : "Failed to update quantity")
+      console.error("Error updating item:", err)
+      toast.error(err instanceof Error ? err.message : "Failed to update item")
     } finally {
       setUpdatingItems((prev) => ({ ...prev, [itemId]: false }))
     }
@@ -163,6 +193,18 @@ export default function InventoryDashboard() {
                   <div>
                     <CardTitle className="text-lg sm:text-xl line-clamp-1">{item.name}</CardTitle>
                     <CardDescription>{item.category}</CardDescription>
+                    <div className="mt-1 text-sm text-gray-500">
+                      <span className="font-medium flex items-center gap-1">
+                        <MapPin className="h-3 w-3" /> 
+                        {item.location ? (
+                          item.location === 'ice_electronics' ? 'ICE Electronics' :
+                          item.location === 'electronics_drawer' ? 'Electronics Drawer' :
+                          item.location === 'powertrain_drawer' ? 'Powertrain Drawer' :
+                          item.location === 'ev_shelf' ? 'EV Shelf' :
+                          item.location
+                        ) : 'No location set'}
+                      </span>
+                    </div>
                   </div>
                   <div className="flex flex-col items-end">
                     <Badge variant={item.quantity <= 5 ? "destructive" : "secondary"} className="shrink-0 mb-2">
@@ -192,7 +234,7 @@ export default function InventoryDashboard() {
                 </div>
               </CardContent>
               <CardFooter className="text-xs text-gray-500 border-t border-gray-100 p-3 sm:p-4">
-                Last updated: {new Date(item.created_at).toLocaleDateString()}
+                Last updated: {new Date(item.created_at).toISOString().split('T')[0]}
               </CardFooter>
             </Card>
           ))}
