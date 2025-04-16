@@ -25,6 +25,9 @@ const formSchema = z.object({
   quantity: z.coerce.number().min(1, {
     message: "Quantity must be at least 1.",
   }),
+  location: z.string({
+    required_error: "Please enter a location.",
+  })
 })
 
 export default function AddItemForm() {
@@ -44,6 +47,7 @@ export default function AddItemForm() {
       name: "",
       category: "",
       quantity: 1,
+      location: "",
     },
   })
 
@@ -61,13 +65,17 @@ export default function AddItemForm() {
     setError(null)
 
     try {
+      
       // Prepare the data to send to the API
       const itemData = {
         name: values.name,
         category: values.category,
         quantity: values.quantity,
+        location: values.location,
         image_url: previewImage || null,
       }
+
+      console.log("Submitting item data:", itemData);
 
       // Make API call to create item
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL_HOSTED}/api/items`, {
@@ -82,6 +90,9 @@ export default function AddItemForm() {
         const errorData = await response.json()
         throw new Error(errorData.error || "Failed to save item")
       }
+
+      const savedItem = await response.json();
+      console.log("Saved item response:", savedItem);
 
       // Success
       setIsSuccess(true)
@@ -238,6 +249,7 @@ export default function AddItemForm() {
       // Update form with scanned data
       form.setValue("name", data.name)
       form.setValue("quantity", data.quantity)
+      form.setValue("location", data.location)
 
       // Try to determine category based on the raw text
       const rawText = data.raw_text.toLowerCase()
@@ -256,8 +268,9 @@ export default function AddItemForm() {
       }
 
       form.setValue("category", category)
+
     } catch (err) {
-      console.error("Error during scan:", err)
+      console.error("Error scanning item:", err)
       setError(err instanceof Error ? err.message : "An unknown error occurred")
     } finally {
       setIsSubmitting(false)
@@ -294,36 +307,6 @@ export default function AddItemForm() {
 
                     <FormField
                       control={form.control}
-                      name="category"
-                      render={({ field }) => (
-                        <FormItem className="relative">
-                          <FormLabel>Category</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger className="w-full input-modern">
-                                <SelectValue placeholder="Select a category" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent
-                              position="popper"
-                              className="w-full min-w-[8rem] max-w-[--radix-select-trigger-width]"
-                              sideOffset={4}
-                            >
-                              <SelectItem value="electronics">Electronics</SelectItem>
-                              <SelectItem value="mechanical">Mechanical</SelectItem>
-                              <SelectItem value="power">Power</SelectItem>
-                              <SelectItem value="materials">Materials</SelectItem>
-                              <SelectItem value="tools">Tools</SelectItem>
-                              <SelectItem value="other">Other</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
                       name="quantity"
                       render={({ field }) => (
                         <FormItem>
@@ -335,8 +318,36 @@ export default function AddItemForm() {
                         </FormItem>
                       )}
                     />
-                  </div>
 
+                    <FormField
+                      control={form.control}
+                      name="location"
+                      render={({ field }) => (
+                        <FormItem className="relative">
+                          <FormLabel>Location</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger className="w-full input-modern">
+                                <SelectValue placeholder="Select location" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent
+                              position="popper"
+                              className="w-full min-w-[8rem] max-w-[--radix-select-trigger-width]"
+                              sideOffset={4}
+                            >
+                              <SelectItem value="ice_electronics">ICE Electronics</SelectItem>
+                              <SelectItem value="electronics_drawer">Electronics Drawer</SelectItem>
+                              <SelectItem value="powertrain_drawer">Powertrain Drawer</SelectItem>
+                              <SelectItem value="ev_shelf">EV Shelf</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  
                   <div className="space-y-3 sm:space-y-4">
                     <div>
                       <Label htmlFor="image">Item Image</Label>
@@ -555,6 +566,34 @@ export default function AddItemForm() {
                           <FormDescription className="text-xs sm:text-sm text-gray-500">
                             Adjust quantity if needed
                           </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="location"
+                      render={({ field }) => (
+                        <FormItem className="relative">
+                          <FormLabel>Location</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger className="w-full input-modern">
+                                <SelectValue placeholder="Select location" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent
+                              position="popper"
+                              className="w-full min-w-[8rem] max-w-[--radix-select-trigger-width]"
+                              sideOffset={4}
+                            >
+                              <SelectItem value="ice_electronics">ICE Electronics</SelectItem>
+                              <SelectItem value="electronics_drawer">Electronics Drawer</SelectItem>
+                              <SelectItem value="powertrain_drawer">Powertrain Drawer</SelectItem>
+                              <SelectItem value="ev_shelf">EV Shelf</SelectItem>
+                            </SelectContent>
+                          </Select>
                           <FormMessage />
                         </FormItem>
                       )}
